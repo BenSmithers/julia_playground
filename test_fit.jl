@@ -1,5 +1,13 @@
 # this script generates some data according to some function, and then tries to fit to that function 
 
+println("Running")
+
+using Random
+using CurveFit
+using Plots
+
+println("Imported") 
+
 function vector_mult(a_vec, b_vec)
     """
         element-wise multiplication of two vectors 
@@ -59,18 +67,42 @@ function vector_scale(value, vec)
     return result
 end
 
-function test_func(x_vals)
-    return vector_add([vector_scale(1.5, vector_mult(x_vals, x_vals)), vector_scale(-0.25, x_vals), ones(length(x_vals)) ])
+A = 1.5
+B = -0.75
+C = 1
+
+noise_scale = 0.15
+
+function test_func(x_vals, noisy=true)
+    """
+        Smash some stuff together, add some noise 
+    """
+    if noisy
+        const_part = vector_scale(C - 0.5*noise_scale, ones(length(x_vals)))
+
+        return vector_add([vector_scale(A, vector_mult(x_vals, x_vals)), vector_scale(B, x_vals), const_part, vector_scale(noise_scale, rand(length(x_vals))) ])
+    else
+        const_part = vector_scale(C, ones(length(x_vals)))
+
+        return vector_add([vector_scale(A, vector_mult(x_vals, x_vals)), vector_scale(B, x_vals), const_part ])
+    end
 end
 
 #x_vals = linspace(0, 10, 20)
-x_vals = LinRange(0, 1, 20)
+x_vals = LinRange(-1, 1, 100)
 #x_vals = Array(x_vals)
 y_vals = test_func(x_vals)
 
+vals = poly_fit(x_vals, y_vals, 2)
+y_perfect = test_func(x_vals, false)
 
+println(vals)
 
-for i=y_vals
-    println(i)
+plot(x_vals, y_perfect, label="true", lc=:black, lw=2)
+test = scatter!(x_vals, y_vals, label="data", mc=:red, ms=2, ma=0.5)
 
-end
+plot!(legend=:bottomleft)
+title!("Sine with noise")
+xlabel!("x")
+ylabel!("y")
+display(test)
